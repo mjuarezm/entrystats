@@ -17,6 +17,3 @@ WORKDIR /opt/entrystats
 
 # Install python requirements.
 RUN pip install -r requirements.txt
-
-# Define default command.
-CMD "python entry_stats.py"
