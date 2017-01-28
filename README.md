@@ -1,15 +1,15 @@
 USAGE
 -----
- 1. Clone:
+ 1. Clone the repo:
 
-	```git clone https://github.com/mjuarezm/entrystats.git```
+	`git clone https://github.com/mjuarezm/entrystats.git`
 
- 1. Configure:
+ 1. Build docker image:
 
-	```./setup```
+	`./setup`
 
- 1. Run measurements
+ 1. Run measurements in a docker instance:
 	
-	```./run```
+	`./run`
 
  1. Check results in  the new `results` directory.
