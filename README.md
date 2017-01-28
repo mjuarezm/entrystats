@@ -1,5 +1,6 @@
-USAGE
+Usage
 -----
+
  1. Clone the repo:
 
 	`git clone https://github.com/mjuarezm/entrystats.git`
