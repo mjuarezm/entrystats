@@ -18,6 +18,7 @@ RUN pip install -r requirements.txt
 
 # Define working directory to volume.
 RUN mkdir /entrystats
+RUN mkdir /entrystats/results
 WORKDIR /entrystats
 
 # Run script

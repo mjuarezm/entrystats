@@ -1,7 +1,7 @@
 import sys
 import time
 from os import makedirs
-from os.path import join, dirname, realpath, isdir
+from os.path import join, dirname, realpath
 import stem.control
 import stem.process
 from stem import Signal
@@ -55,8 +55,6 @@ def walk_guards(controller):
 
 
 def main():
-    if not isdir(RESULTS_DIR):
-        makedirs(RESULTS_DIR)
     makedirs(CURRENT_DIR)
     stem.process.launch_tor_with_config(config={'ControlPort': '9051'})
     with stem.control.Controller.from_port() as controller:
