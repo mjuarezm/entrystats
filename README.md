@@ -17,3 +17,8 @@ Analysis
 1. Run analysis scripts: `make analyse`
 
 1. Check results in `results_analysis.html`
+
+All
+---
+
+You can collect and then run the analyses by doing: `make all`

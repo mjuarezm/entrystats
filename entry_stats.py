@@ -37,6 +37,8 @@ COMMAND = ("tshark -l -nn -T fields -E separator=,"
            " -e tcp.options.timestamp.tsval -e tcp.options.timestamp.tsecr"
            " -f")
 
+# globals
+NUM_SAMPLES = 10
 
 @contextmanager
 def record(output, filter=''):
@@ -59,7 +61,7 @@ def main():
     stem.process.launch_tor_with_config(config={'ControlPort': '9051'})
     with stem.control.Controller.from_port() as controller:
         controller.authenticate()
-        for i in xrange(3):
+        for i in xrange(NUM_SAMPLES):
             for ip, fingerprint in walk_guards(controller):
                 output = join(CURRENT_DIR, "%s_%s.tshark" % (fingerprint, i))
                 with record(output, FILTER.format(entry_ip=ip)):
