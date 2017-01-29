@@ -7,18 +7,16 @@ ENV DEBIAN_FRONTEND noninteractive
 # Install required packages.
 RUN \
   apt-get update && \
-  apt-get install -y python python-dev python-pip python-virtualenv libcurl4-openssl-dev tshark tor
+  apt-get install -y python python-dev python-pip python-virtualenv libcurl4-openssl-dev tshark tor libfreetype6-dev ipython ipython-notebook
 
 # Add repo to temp for setup.
 ADD . /tmp/entrystats
 WORKDIR /tmp/entrystats
 
 # Install python requirements.
-RUN pip install stem
+RUN pip install --upgrade pip
+RUN pip install -r requirements.txt
 
 # Define working directory to volume.
 RUN mkdir /entrystats
 WORKDIR /entrystats
-
-# Run script
-CMD [ "python", "./entry_stats.py" ]

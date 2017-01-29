@@ -1,3 +1,6 @@
+stem
+packaging
+jupyter
 pandas
 numpy
 matplotlib

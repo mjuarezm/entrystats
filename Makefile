@@ -5,10 +5,10 @@ build:
 	docker build -t entrystats --rm .
 
 collect:
-	docker run -v `pwd`:/entrystats -it --privileged entrystats
+	docker run -v `pwd`:/entrystats -it --privileged entrystats python entry_stats.py
 
 analyse:
-	ipython nbconvert --to pdf stats_analysis.ipynb
+	docker run -v `pwd`:/entrystats -it --privileged entrystats ipython nbconvert --html stats_analysis.ipynb
 
 destroy:
 	docker stop `docker ps -a -q -f ancestor=entrystats`
