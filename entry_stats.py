@@ -1,26 +1,30 @@
 import sys
-import StringIO
-import pycurl
 import time
 from os import makedirs
 from os.path import join, dirname, realpath
 import stem.control
+import stem.process
+from stem import Signal
 from contextlib import contextmanager
 from subprocess import Popen, PIPE
+import logging
 
 # current directory
 RESULTS_DIR = join(dirname(realpath(__file__)), 'results')
-CURRENT_DIR = join(RESULTS_DIR, time.strftime('%y%m%d_%H%M%S'))
+TIMESTAMP = time.strftime('%y%m%d_%H%M%S')
+CURRENT_DIR = join(RESULTS_DIR, TIMESTAMP)
 
-# tor config
-SOCKS_PORT = 9050
-CONNECTION_TIMEOUT = 30  # timeout before we give up on a circuit
+# logger
+FORMAT = '%(asctime)s %(name)-12s %(levelname)-8s %(message)s'
+logging.basicConfig(format=FORMAT, level=logging.DEBUG)
+logger = logging.getLogger()
+logfile = join(RESULTS_DIR, '%s.log' % TIMESTAMP)
+fileHandler = logging.FileHandler(logfile)
+fileHandler.setFormatter(logging.Formatter(FORMAT))
 
 # capture config
-TIMEOUT = 60
-MAX_SIZE = 1000
-FILTER = 'tcp and host {entry_ip}'
-COMMAND = ("tshark -nn -T fields -E separator=,"
+FILTER = 'host {entry_ip}'
+COMMAND = ("tshark -l -nn -T fields -E separator=,"
            " -e ip.proto"
            " -e frame.time_epoch"
            " -e ip.src -e ip.dst"
@@ -29,42 +33,16 @@ COMMAND = ("tshark -nn -T fields -E separator=,"
            " -e tcp.flags -e tcp.seq -e tcp.ack"
            " -e tcp.window_size_value -e _ws.expert.message"
            " -e tcp.options.timestamp.tsval -e tcp.options.timestamp.tsecr"
-           " -a duration:{timeout} -a filesize:{max_size} -s 0 -f \'{filter}\' > {output}")
+           " -f")
 
 
-class Sniffer():
-    """Captures traffic logs using tshark."""
-    def __init__(self, timeout=TIMEOUT, max_size=MAX_SIZE, filter=''):
-        self.command = COMMAND.format(timeout=timeout, max_size=max_size, filter=filter)
-
-    @contextmanager
-    def record(self, output):
-        try:
-            self.p0 = Popen(self.command.format(output=output), stdout=PIPE, stderr=PIPE)
-        finally:
-            self.p0.kill()
-
-
-def query(url):
-    """
-    Uses pycurl to fetch a site using the proxy on the SOCKS_PORT.
-    """
-
-    output = StringIO.StringIO()
-
-    query = pycurl.Curl()
-    query.setopt(pycurl.URL, url)
-    query.setopt(pycurl.PROXY, 'localhost')
-    query.setopt(pycurl.PROXYPORT, SOCKS_PORT)
-    query.setopt(pycurl.PROXYTYPE, pycurl.PROXYTYPE_SOCKS5_HOSTNAME)
-    query.setopt(pycurl.CONNECTTIMEOUT, CONNECTION_TIMEOUT)
-    query.setopt(pycurl.WRITEFUNCTION, output.write)
-
-    try:
-        query.perform()
-        return output.getvalue()
-    except pycurl.error as exc:
-        raise ValueError("Unable to reach %s (%s)" % (url, exc))
+@contextmanager
+def record(output, filter=''):
+    """Capture network packets with tshark."""
+    with open(output, 'w') as f:
+        p = Popen(COMMAND.split() + ['%s' % filter], stdout=f, stderr=PIPE)
+        yield p
+        p.kill()
 
 
 def walk_guards(controller):
@@ -74,37 +52,24 @@ def walk_guards(controller):
             yield router_status.address, router_status.fingerprint
 
 
-def build(controller, path):
-    circuit_id = controller.new_circuit(path, await_build=True)
-
-    def attach_stream(stream):
-        if stream.status == 'NEW':
-            controller.attach_stream(stream.id, circuit_id)
-
-    controller.add_event_listener(attach_stream, stem.control.EventType.STREAM)
-
-    try:
-        controller.set_conf('__LeaveStreamsUnattached', '1')
-        check_page = query('https://check.torproject.org/')
-        return check_page
-    finally:
-        controller.remove_event_listener(attach_stream)
-        controller.reset_conf('__LeaveStreamsUnattached')
-
-
 def main():
     makedirs(CURRENT_DIR)
+    stem.process.launch_tor_with_config(config={'ControlPort': '9051'})
     with stem.control.Controller.from_port() as controller:
         controller.authenticate()
-        for ip, fingerprint in walk_guards(controller):
-            sniffer = Sniffer(filter=FILTER.format(entry_ip=ip))
-            with sniffer.record(join(CURRENT_DIR, "%s.tshark" % fingerprint)):
-                time.sleep(1)
-                print('recording: %s' % fingerprint)
-                try:
-                    build(controller, [fingerprint])
-                except Exception as exc:
-                    print('%s => %s' % (fingerprint, exc))
+        for i in xrange(3):
+            for ip, fingerprint in walk_guards(controller):
+                output = join(CURRENT_DIR, "%s_%s.tshark" % (fingerprint, i))
+                with record(output, FILTER.format(entry_ip=ip)):
+                    time.sleep(1)
+                    logger.info('Recording: %s, %s' % (ip, fingerprint))
+                    try:
+                        controller.set_conf('EntryNodes', fingerprint)
+                        controller.signal(Signal.HUP)
+                        controller.signal(Signal.NEWNYM)
+                        time.sleep(controller.get_newnym_wait())
+                    except Exception as exc:
+                        logger.exception('%s => %s' % (fingerprint, exc))
 
 
 if __name__ == '__main__':
