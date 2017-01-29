@@ -4,22 +4,19 @@ FROM ubuntu
 # Avoid dialogs during installation.
 ENV DEBIAN_FRONTEND noninteractive
 
-# Avoid ERROR: invoke-rc.d: policy-rc.d denied execution of start.
-# See: http://askubuntu.com/q/365911
-RUN echo "#!/bin/sh\nexit 0" > /usr/sbin/policy-rc.d
-
 # Install required packages.
 RUN \
   apt-get update && \
   apt-get install -y python python-dev python-pip python-virtualenv libcurl4-openssl-dev tshark tor
 
-# Define working directory.
+# Add repo to temp for setup.
 ADD . /tmp/entrystats
 WORKDIR /tmp/entrystats
 
 # Install python requirements.
 RUN pip install -r requirements.txt
 
+# Define working directory to volume.
 RUN mkdir /entrystats
 WORKDIR /entrystats
 
