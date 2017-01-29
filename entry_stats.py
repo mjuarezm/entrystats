@@ -1,7 +1,7 @@
 import sys
 import time
 from os import makedirs
-from os.path import join, dirname, realpath
+from os.path import join, dirname, realpath, isdir
 import stem.control
 import stem.process
 from stem import Signal
@@ -21,6 +21,8 @@ logger = logging.getLogger()
 logfile = join(RESULTS_DIR, '%s.log' % TIMESTAMP)
 fileHandler = logging.FileHandler(logfile)
 fileHandler.setFormatter(logging.Formatter(FORMAT))
+logger.addHandler(fileHandler)
+logger.setLevel(logging.DEBUG)
 
 # capture config
 FILTER = 'host {entry_ip}'
@@ -53,6 +55,8 @@ def walk_guards(controller):
 
 
 def main():
+    if not isdir(RESULTS_DIR):
+        makedirs(RESULTS_DIR)
     makedirs(CURRENT_DIR)
     stem.process.launch_tor_with_config(config={'ControlPort': '9051'})
     with stem.control.Controller.from_port() as controller:
