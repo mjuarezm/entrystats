@@ -1,12 +1,22 @@
-all: clean build run
+all: build run destroy
 
 build:
+	mkdir -p results
 	docker build -t entrystats --rm .
 
-run:
+collect:
 	docker run -v `pwd`:/entrystats -it --privileged entrystats
 
-clean:
+analyse:
+	ipython nbconvert --to pdf stats_analysis.ipynb
+
+destroy:
 	docker stop `docker ps -a -q -f ancestor=entrystats`
 	docker rm `docker ps -a -q -f ancestor=entrystats`
 	docker rmi -f entrystats
+
+clean:
+	rm -rf *.pdf
+	rm -rf results/*
+
+reset: destroy clean
