@@ -3,7 +3,7 @@ Little tool to collect and analyse statistics about TCP stack properties of all 
 Data collection
 ---------------
 
- 1. Install `docker`: [installation instructions](https://docs.docker.com/engine/installation/)
+ 1. Install `docker`: [installation instructions](https://docs.docker.com/engine/installation/) (docker should be able to run without sudo)
 
  1. Clone the repo: `git clone https://github.com/mjuarezm/entrystats.git`
 
