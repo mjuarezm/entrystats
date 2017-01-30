@@ -1,6 +1,6 @@
 import sys
 import time
-from os import makedirs
+from os import makedirs, killpg, getpgid, setsid
 from os.path import join, dirname, realpath
 import stem.control
 import stem.process
@@ -8,6 +8,7 @@ from stem import Signal
 from contextlib import contextmanager
 from subprocess import Popen, PIPE
 import logging
+from signal import SIGTERM
 
 # current directory
 RESULTS_DIR = join(dirname(realpath(__file__)), 'results')
@@ -38,15 +39,18 @@ COMMAND = ("tshark -l -nn -T fields -E separator=,"
            " -f")
 
 # globals
+CONTROL_PORT = '9051'
 NUM_SAMPLES = 10
 
 @contextmanager
 def record(output, filter=''):
     """Capture network packets with tshark."""
     with open(output, 'w') as f:
-        p = Popen(COMMAND.split() + ['%s' % filter], stdout=f, stderr=PIPE)
+	cmd = COMMAND.split() + ['%s' % filter]
+	logger.info("tshark cmd: %s", ' '.join(cmd))
+        p = Popen(cmd, stdout=f, stderr=PIPE, preexec_fn=setsid)
         yield p
-        p.kill()
+	killpg(getpgid(p.pid), SIGTERM)
 
 
 def walk_guards(controller):
@@ -58,8 +62,8 @@ def walk_guards(controller):
 
 def main():
     makedirs(CURRENT_DIR)
-    stem.process.launch_tor_with_config(config={'ControlPort': '9051'})
-    with stem.control.Controller.from_port() as controller:
+    stem.process.launch_tor_with_config(config={'ControlPort': CONTROL_PORT})
+    with stem.control.Controller.from_port(port=int(CONTROL_PORT)) as controller:
         controller.authenticate()
         for i in xrange(NUM_SAMPLES):
             for ip, fingerprint in walk_guards(controller):
@@ -69,7 +73,9 @@ def main():
                     logger.info('Recording: %s, %s' % (ip, fingerprint))
                     try:
                         controller.set_conf('EntryNodes', fingerprint)
+			time.sleep(1)
                         controller.signal(Signal.HUP)
+			#controller.drop_guards()
                         controller.signal(Signal.NEWNYM)
                         time.sleep(controller.get_newnym_wait())
                     except Exception as exc:
