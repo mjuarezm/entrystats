@@ -3,6 +3,7 @@ import time
 from os import makedirs, killpg, getpgid, setsid
 from os.path import join, dirname, realpath
 from stem.control import Controller
+import random
 import socket
 from contextlib import contextmanager
 from subprocess import Popen, PIPE
@@ -85,14 +86,15 @@ def measure_entry(entry):
     address, fp = entry
     ip, _ = address
     output = join(CUR_DIR, '%s_%s.tshark' % (fp, time.strftime('%d%H%M%S')))
+    time.sleep(2 * (random.random() + 1))
     with record(output, FILTER.format(entry_ip=ip)):
-        time.sleep(0.5)
+        time.sleep(1)
         try:
             connect(address)
         except Exception as exc:
             logger.exception('%s => %s' % (id, exc))
         else:
-            time.sleep(0.5)
+            time.sleep(1)
 
 
 def main():
