@@ -2,18 +2,19 @@ import sys
 import time
 from os import makedirs, killpg, getpgid, setsid
 from os.path import join, dirname, realpath
-import stem.control
-import stem.process
-from stem import Signal
+from stem.control import Controller
+import socket
 from contextlib import contextmanager
 from subprocess import Popen, PIPE
 import logging
 from signal import SIGTERM
+from multiprocessing import cpu_count, Pool
+
 
 # current directory
 RESULTS_DIR = join(dirname(realpath(__file__)), 'results')
 TIMESTAMP = time.strftime('%y%m%d_%H%M%S')
-CURRENT_DIR = join(RESULTS_DIR, TIMESTAMP)
+CUR_DIR = join(RESULTS_DIR, TIMESTAMP)
 
 # logger
 FORMAT = '%(asctime)s %(name)-12s %(levelname)-8s %(message)s'
@@ -39,47 +40,70 @@ COMMAND = ("tshark -l -nn -T fields -E separator=,"
            " -f")
 
 # globals
+NUM_PROCS = cpu_count()
 CONTROL_PORT = '9051'
 NUM_SAMPLES = 10
+
 
 @contextmanager
 def record(output, filter=''):
     """Capture network packets with tshark."""
     with open(output, 'w') as f:
-	cmd = COMMAND.split() + ['%s' % filter]
-	logger.info("tshark cmd: %s", ' '.join(cmd))
+        cmd = COMMAND.split() + ['%s' % filter]
+        logger.info("tshark cmd: %s", ' '.join(cmd))
         p = Popen(cmd, stdout=f, stderr=PIPE, preexec_fn=setsid)
         yield p
-	killpg(getpgid(p.pid), SIGTERM)
+        killpg(getpgid(p.pid), SIGTERM)
 
 
 def walk_guards(controller):
     """Iterate over all entry guard fingerprints."""
-    for router_status in controller.get_network_statuses():
-        if 'Guard' in router_status.flags:
-            yield router_status.address, router_status.fingerprint
+    for rs in controller.get_network_statuses():
+        if 'Guard' in rs.flags:
+            yield (rs.address, rs.or_port), rs.fingerprint
+
+
+def all_entries():
+    """Return all entry guards in the consensus."""
+    entries = []
+    with Controller.from_port(port=int(CONTROL_PORT)) as controller:
+        controller.authenticate()
+        for address, fingerprint in walk_guards(controller):
+            entries.append((address, fingerprint))
+    return entries
+
+
+def connect(address):
+    """Make TCP connectio to ip:port."""
+    logger.debug("Attempt connection to: %s:%s" % address)
+    s = socket.create_connection(address, timeout=10)
+    s.close()
+
+
+def measure_entry(entry):
+    """Capture traffic genrated by making a TCP connection to entry."""
+    address, fp = entry
+    ip, _ = address
+    output = join(CUR_DIR, '%s_%s.tshark' % (fp, time.strftime('%d%H%M%S')))
+    with record(output, FILTER.format(entry_ip=ip)):
+        time.sleep(0.5)
+        try:
+            connect(address)
+        except Exception as exc:
+            logger.exception('%s => %s' % (id, exc))
+        else:
+            time.sleep(0.5)
 
 
 def main():
-    makedirs(CURRENT_DIR)
-    stem.process.launch_tor_with_config(config={'ControlPort': CONTROL_PORT})
-    with stem.control.Controller.from_port(port=int(CONTROL_PORT)) as controller:
-        controller.authenticate()
-        for i in xrange(NUM_SAMPLES):
-            for ip, fingerprint in walk_guards(controller):
-                output = join(CURRENT_DIR, "%s_%s.tshark" % (fingerprint, i))
-                with record(output, FILTER.format(entry_ip=ip)):
-                    time.sleep(1)
-                    logger.info('Recording: %s, %s' % (ip, fingerprint))
-                    try:
-                        controller.set_conf('EntryNodes', fingerprint)
-			time.sleep(1)
-                        controller.signal(Signal.HUP)
-			#controller.drop_guards()
-                        controller.signal(Signal.NEWNYM)
-                        time.sleep(controller.get_newnym_wait())
-                    except Exception as exc:
-                        logger.exception('%s => %s' % (fingerprint, exc))
+    makedirs(CUR_DIR)
+    entries = all_entries()
+    for _ in xrange(NUM_SAMPLES):
+        # parallelize visits for each sample
+        p = Pool(NUM_PROCS)
+        p.map(measure_entry, entries)
+        p.close()
+        p.join()
 
 
 if __name__ == '__main__':

@@ -5,7 +5,7 @@ build:
 	docker build -t entrystats --rm .
 
 collect:
-	docker run -v `pwd`:/entrystats -it --privileged entrystats python entry_stats.py
+	docker run -v `pwd`:/entrystats -it --privileged entrystats sh -c 'tor --ControlPort 9051 --RunAsDaemon 1; sleep 5; python entry_stats.py'
 
 analyse:
 	docker run -v `pwd`:/entrystats -it --privileged entrystats sh -c 'jupyter nbconvert --execute stats_analysis.ipynb'
