@@ -35,8 +35,9 @@ COMMAND = ("tshark -l -nn -T fields -E separator=,"
            " -e ip.src -e ip.dst"
            " -e tcp.srcport -e tcp.dstport"
            " -e ip.len -e ip.hdr_len -e tcp.hdr_len -e data.len"
-           " -e tcp.flags -e tcp.seq -e tcp.ack"
-           " -e tcp.window_size_value -e _ws.expert.message"
+           " -e tcp.flags -e tcp.seq -e tcp.ack -e tcp.nxtseq"
+           " -e tcp.analysis.acks_frame -e tcp.window_size_value"
+           " -e _ws.expert.message"
            " -e tcp.options.timestamp.tsval -e tcp.options.timestamp.tsecr"
            " -f")
 
