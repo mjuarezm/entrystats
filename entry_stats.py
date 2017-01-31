@@ -39,7 +39,7 @@ COMMAND = ("tshark -l -nn -T fields -E separator=,"
            " -e tcp.analysis.acks_frame -e tcp.window_size_value"
            " -e _ws.expert.message"
            " -e tcp.options.timestamp.tsval -e tcp.options.timestamp.tsecr"
-           " -f")
+           " -o tcp.relative_sequence_numbers:False -f")
 
 # globals
 NUM_PROCS = cpu_count()
