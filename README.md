@@ -25,4 +25,4 @@ Analysis
 All
 ---
 
-You can collect and then run the analyses by doing: `make all`
+You can collect and then run the analyses in one single command: `make all`
