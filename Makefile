@@ -5,7 +5,7 @@ build:
 	docker build -t entrystats --rm .
 
 collect:
-	docker run -v `pwd`:/entrystats -it --privileged entrystats sh -c 'tor --ControlPort 9051 --RunAsDaemon 1; sleep 5; python entry_stats.py'
+	docker run -v `pwd`:/entrystats -it --privileged entrystats
 
 analyse:
 	jupyter nbconvert  --ExecutePreprocessor.timeout=600 --execute stats_analysis.ipynb
@@ -18,7 +18,7 @@ destroy: stop
 	docker rmi -f entrystats
 
 clean:
-	rm -rf *.pdf
+	rm -rf *.html
 	rm -rf results/*
 
-reset: destroy clean
+reset: stop destroy clean

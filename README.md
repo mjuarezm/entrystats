@@ -16,6 +16,8 @@ Analysis
 
 1. Install Jupyter notebook: [installation instructions](http://jupyter.readthedocs.io/en/latest/install.html)
 
+1. You may need to install the following dependencies: `matplotlib`, `numpy`, `pandas`
+
 1. Run analysis scripts: `make analyse`
 
 1. Check results in `results_analysis.html`

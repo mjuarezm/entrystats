@@ -1,6 +1,2 @@
 stem
 scapy
-jupyter
-pandas
-numpy
-matplotlib

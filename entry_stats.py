@@ -4,7 +4,7 @@ from scapy.all import *
 from time import strftime, sleep
 import multiprocessing as mp
 from os.path import join, dirname, realpath
-from stem import DescriptorUnavailable, control
+from stem import control
 
 # crawl
 PARALLEL = False
@@ -21,32 +21,21 @@ DATA_PATH = join(RESULTS_DIR, '%s.csv' % TIMESTAMP)
 
 # network
 CONTROL_PORT = '9051'
-TOR_CTRL_CONN_RETRIES = 3
 
 # logger
 LOG_FORMAT = '%(asctime)s %(name)-12s %(levelname)-8s %(message)s'
 logging.basicConfig(filename=LOG_PATH, format=LOG_FORMAT, level=logging.DEBUG)
 
 
-def get_network_statuses():
+def get_network_entries():
     """Return network statuses from Tor consensus."""
-    statuses = []
+    entries = []
     with control.Controller.from_port(port=int(CONTROL_PORT)) as c:
         c.authenticate()
-        retries = 0
-        while True:
-            try:
-                for s in c.get_network_statuses():
-                    if 'Guard' in s.flags:
-                        statuses.append(((s.address, s.or_port), s.fingerprint))
-                return statuses
-            except DescriptorUnavailable as e:
-                logging.exception(e)
-                if retries == TOR_CTRL_CONN_RETRIES:
-                    raise Exception("Max retries to connect to Tor reached.")
-                logging.debug("Retry connecting to Tor control port...")
-                retries += 1
-                sleep(1)
+        for s in c.get_network_statuses():
+            if 'Guard' in s.flags:
+                entries.append(((s.address, s.or_port), s.fingerprint))
+    return entries
 
 
 def connect(address):
@@ -72,12 +61,13 @@ def get_stats(packets):
 def measure_entry(entry):
     """Connect to entry."""
     address, fp = entry
+    min_fp = fp[:len(fp) / 2]
     logging.info("Probing: {}".format(fp))
     sample = None
-    sleep(random())
+    sleep(random.random())
     try:
         packets = connect(address)
-        sample = [strftime('%d%H%M%S'), fp] + get_stats(packets)
+        sample = [strftime('%d%H%M%S'), min_fp] + get_stats(packets)
     except Exception as e:
         logging.exception("Entry {0}: {1}".format(fp, e))
     else:
@@ -86,12 +76,12 @@ def measure_entry(entry):
 
 
 def main():
-    statuses = get_network_statuses()
+    entries = get_network_entries()
     with open(DATA_PATH, 'a') as f:
         f.write(','.join(HEADERS) + '\n')
         for _ in xrange(NUM_SAMPLES):
             p = mp.Pool(NUM_PROCS)
-            for result in p.imap(measure_entry, statuses):
+            for result in p.imap(measure_entry, entries):
                 if result is not None:
                     f.write(','.join(result) + '\n')
                     f.flush()
