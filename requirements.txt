@@ -1,4 +1,5 @@
 stem
+scapy
 jupyter
 pandas
 numpy

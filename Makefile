@@ -8,11 +8,13 @@ collect:
 	docker run -v `pwd`:/entrystats -it --privileged entrystats sh -c 'tor --ControlPort 9051 --RunAsDaemon 1; sleep 5; python entry_stats.py'
 
 analyse:
-	docker run -v `pwd`:/entrystats -it --privileged entrystats sh -c 'jupyter nbconvert  --ExecutePreprocessor.timeout=600 --execute stats_analysis.ipynb'
+	jupyter nbconvert  --ExecutePreprocessor.timeout=600 --execute stats_analysis.ipynb
 
-destroy:
+stop:
 	docker stop `docker ps -a -q -f ancestor=entrystats`
 	docker rm `docker ps -a -q -f ancestor=entrystats`
+
+destroy: stop
 	docker rmi -f entrystats
 
 clean:

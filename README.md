@@ -14,6 +14,8 @@ Data collection
 Analysis
 --------
 
+1. Install Jupyter notebook: [installation instructions](http://jupyter.readthedocs.io/en/latest/install.html)
+
 1. Run analysis scripts: `make analyse`
 
 1. Check results in `results_analysis.html`

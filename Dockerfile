@@ -7,7 +7,7 @@ ENV DEBIAN_FRONTEND noninteractive
 # Install required packages.
 RUN \
   apt-get update && \
-  apt-get install -y python python-dev python-pip python-virtualenv libcurl4-openssl-dev tshark tor libfreetype6-dev ipython ipython-notebook
+  apt-get install -y python python-dev python-pip libcurl4-openssl-dev tor
 
 # Add repo to temp for setup.
 ADD . /tmp/entrystats
