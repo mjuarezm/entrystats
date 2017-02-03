@@ -1,4 +1,4 @@
-all: build run destroy
+all: build collect analyse destroy
 
 build:
 	mkdir -p results
