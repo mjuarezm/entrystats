@@ -1,4 +1,4 @@
-Little tool to collect and analyse statistics about TCP stack properties of all Tor entry guards.
+Small script to collect and analyse statistics about TCP stack properties of all Tor entry guards.
 
 Data collection
 ---------------
