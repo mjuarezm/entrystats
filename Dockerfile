@@ -23,7 +23,4 @@ RUN mkdir /entrystats
 WORKDIR /entrystats
 
 # Run tor
-ADD torrc /etc/tor/
-ADD run.sh /run.sh
-RUN chmod 0755 /run.sh
-CMD ["/run.sh"]
+CMD ["python", "entry_stats.py"]

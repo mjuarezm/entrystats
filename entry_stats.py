@@ -4,12 +4,13 @@ from scapy.all import *
 from time import strftime, sleep
 import multiprocessing as mp
 from os.path import join, dirname, realpath
-from stem import control
+from stem import control, process
+from itertools import repeat
 
 # crawl
-PARALLEL = False
 NUM_PROCS = mp.cpu_count()
-NUM_SAMPLES = 100
+NUM_BATCHES = 100
+NUM_SAMPLES = 3
 HEADERS = ['sample_id', 'guard_fp', 'latency']
 TIMESTAMP = strftime('%y%m%d_%H%M%S')
 
@@ -21,20 +22,23 @@ DATA_PATH = join(RESULTS_DIR, '%s.csv' % TIMESTAMP)
 
 # network
 CONTROL_PORT = '9051'
+SYN_TIMEOUT = 10
 
 # logger
 LOG_FORMAT = '%(asctime)s %(name)-12s %(levelname)-8s %(message)s'
 logging.basicConfig(filename=LOG_PATH, format=LOG_FORMAT, level=logging.DEBUG)
 
 
-def get_network_entries():
+def get_entries():
     """Return network statuses from Tor consensus."""
     entries = []
+    p = process.launch_tor_with_config({'ControlPort': CONTROL_PORT})
     with control.Controller.from_port(port=int(CONTROL_PORT)) as c:
         c.authenticate()
         for s in c.get_network_statuses():
             if 'Guard' in s.flags:
                 entries.append(((s.address, s.or_port), s.fingerprint))
+    p.kill()
     return entries
 
 
@@ -42,7 +46,7 @@ def connect(address):
     """Make TCP connection and return SYN and SYN+ACK packets."""
     dst, dport = address
     syn = TCP(sport=RandShort(), dport=dport, flags='S')
-    synack = sr1(IP(dst=dst) / syn, timeout=10)
+    synack = sr1(IP(dst=dst) / syn, timeout=SYN_TIMEOUT)
     if synack is None:
         raise Exception("No response from server: {0}:{1}".format(*address))
     return syn, synack
@@ -61,30 +65,36 @@ def get_stats(packets):
 def measure_entry(entry):
     """Connect to entry."""
     address, fp = entry
-    min_fp = fp[:len(fp) / 2]
-    logging.info("Probing: {}".format(fp))
-    sample = None
     sleep(random.random())
+    sample = None
     try:
+        logging.info("Probing: {}".format(fp))
         packets = connect(address)
-        sample = [strftime('%d%H%M%S'), min_fp] + get_stats(packets)
+        sample = [strftime('%d%H%M%S'), fp] + get_stats(packets)
     except Exception as e:
         logging.exception("Entry {0}: {1}".format(fp, e))
-    else:
-        sleep(0.5)
     return sample
 
 
+def gen_it_entries(entries):
+    """Return iterator over entries according to number of samples"""
+    def it_entries():
+        for batch in repeat(entries, NUM_BATCHES):
+            for entry in batch:
+                for i in repeat(entry, NUM_SAMPLES):
+                    yield i
+    return it_entries
+
+
 def main():
-    entries = get_network_entries()
+    it_entries = gen_it_entries(get_entries())
     with open(DATA_PATH, 'a') as f:
         f.write(','.join(HEADERS) + '\n')
-        for _ in xrange(NUM_SAMPLES):
-            p = mp.Pool(NUM_PROCS)
-            for result in p.imap(measure_entry, entries):
-                if result is not None:
-                    f.write(','.join(result) + '\n')
-                    f.flush()
+        p = mp.Pool(NUM_PROCS)
+        for result in p.imap(measure_entry, it_entries()):
+            if result is not None:
+                f.write(','.join(result) + '\n')
+                f.flush()
 
 
 if __name__ == '__main__':
