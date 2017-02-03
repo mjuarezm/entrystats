@@ -101,7 +101,7 @@ def main():
             for sample in samples:
                 if sample is not None:
                     f.write(','.join(sample) + '\n')
-                    f.flush()
+            f.flush()
 
 
 if __name__ == '__main__':
