@@ -23,6 +23,7 @@ DATA_PATH = join(RESULTS_DIR, '%s.csv' % TIMESTAMP)
 # network
 CONTROL_PORT = '9051'
 SYN_TIMEOUT = 10
+SAMPLE_SLEEP = 0.4
 
 # logger
 LOG_FORMAT = '%(asctime)s %(name)-12s %(levelname)-8s %(message)s'
@@ -59,21 +60,27 @@ def latency(p1, p2):
 
 def get_stats(packets):
     """Return stats about list of packets."""
-    return map(str, [latency(*packets)])
+    STATS = [latency, ]
+    return map(str, [stat(*packets) for stat in STATS])
 
 
 def measure_entry(entry):
     """Connect to entry."""
     address, fp = entry
-    sleep(random.random())
-    sample = None
-    try:
-        logging.info("Probing: {}".format(fp))
-        packets = connect(address)
-        sample = [strftime('%d%H%M%S%f'), fp] + get_stats(packets)
-    except Exception as e:
-        logging.exception("Entry {0}: {1}".format(fp, e))
-    return sample
+    sleep(5 * random.random())
+    samples = []
+    for i in xrange(NUM_SAMPLES):
+        sample = None
+        try:
+            logging.info("Probing: {}".format(fp))
+            packets = connect(address)
+            sample_id = '%s%s' % (strftime('%d%H%M%S'), i)
+            sample = [sample_id, fp] + get_stats(packets)
+        except Exception as e:
+            logging.exception("Entry {0}: {1}".format(fp, e))
+        samples.append(sample)
+        sleep(SAMPLE_SLEEP)
+    return samples
 
 
 def gen_it_entries(entries):
@@ -81,8 +88,7 @@ def gen_it_entries(entries):
     def it_entries():
         for batch in repeat(entries, NUM_BATCHES):
             for entry in batch:
-                for i in repeat(entry, NUM_SAMPLES):
-                    yield i
+                yield entry
     return it_entries
 
 
@@ -91,10 +97,11 @@ def main():
     with open(DATA_PATH, 'a') as f:
         f.write(','.join(HEADERS) + '\n')
         p = mp.Pool(NUM_PROCS)
-        for result in p.imap(measure_entry, it_entries()):
-            if result is not None:
-                f.write(','.join(result) + '\n')
-                f.flush()
+        for samples in p.imap(measure_entry, it_entries()):
+            for sample in samples:
+                if sample is not None:
+                    f.write(','.join(sample) + '\n')
+                    f.flush()
 
 
 if __name__ == '__main__':
