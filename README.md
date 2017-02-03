@@ -20,9 +20,14 @@ Analysis
 
 1. Run analysis scripts: `make analyse`
 
-1. Check results in `results_analysis.html`
+1. Check results in `stats_analysis.html`
 
 Logs and data
 -------------
 
 Logs and data are dumped in `<tiestamp>.log` and `<timestamp>.csv` in `results/`.
+
+Example
+-------
+
+Here there is an example on how the output of the analysis looks like: [stats_analysis.html](http://homes.esat.kuleuven.be/~mjuarezm/tmp/stats_analysis.html)
