@@ -22,7 +22,7 @@ Analysis
 
 1. Check results in `results_analysis.html`
 
-All
----
+Logs and data
+-------------
 
-You can collect and then run the analyses in one single command: `make all`
+Logs and data are dumped in `<tiestamp>.log` and `<timestamp>.csv` in `results/`.
