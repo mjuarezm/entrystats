@@ -70,7 +70,7 @@ def measure_entry(entry):
     try:
         logging.info("Probing: {}".format(fp))
         packets = connect(address)
-        sample = [strftime('%d%H%M%S'), fp] + get_stats(packets)
+        sample = [strftime('%d%H%M%S%f'), fp] + get_stats(packets)
     except Exception as e:
         logging.exception("Entry {0}: {1}".format(fp, e))
     return sample
