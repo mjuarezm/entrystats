@@ -3,7 +3,7 @@ FROM debian:latest
 
 # Install required packages.
 RUN apt-get update \
-	&& apt-get -y install tor tor-geoipdb python python-dev python-pip \
+	&& apt-get -y install tor python python-dev python-pip \
 	&& apt-get clean && rm -rf /var/lib/apt/lists/*
 
 
