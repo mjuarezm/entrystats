@@ -9,9 +9,9 @@ from itertools import repeat
 
 # crawl
 NUM_PROCS = mp.cpu_count()
-NUM_BATCHES = 100
-NUM_SAMPLES = 3
-HEADERS = ['sample_id', 'guard_fp', 'latency']
+NUM_BATCHES = 50
+NUM_SAMPLES = 5
+HEADERS = ['sample_id', 'guard_fp', 'flags', 'latency']
 TIMESTAMP = strftime('%y%m%d_%H%M%S')
 
 # directories
@@ -37,8 +37,7 @@ def get_entries():
     with control.Controller.from_port(port=int(CONTROL_PORT)) as c:
         c.authenticate()
         for s in c.get_network_statuses():
-            if 'Guard' in s.flags:
-                entries.append(((s.address, s.or_port), s.fingerprint))
+            entries.append(((s.address, s.or_port), s.fingerprint, s.flags))
     p.kill()
     return entries
 
@@ -66,7 +65,7 @@ def get_stats(packets):
 
 def measure_entry(entry):
     """Connect to entry."""
-    address, fp = entry
+    address, fp, flags = entry
     sleep(5 * random.random())
     samples = []
     for i in xrange(NUM_SAMPLES):
@@ -75,7 +74,7 @@ def measure_entry(entry):
             logging.info("Probing: {}".format(fp))
             packets = connect(address)
             sample_id = '%s%s' % (strftime('%d%H%M%S'), i)
-            sample = [sample_id, fp] + get_stats(packets)
+            sample = [sample_id, fp, str(flags)] + get_stats(packets)
         except Exception as e:
             logging.exception("Entry {0}: {1}".format(fp, e))
         samples.append(sample)
