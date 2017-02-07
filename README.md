@@ -1,12 +1,12 @@
 # NodeStats
 
-Small script to collect and analyse statistics about TCP stack properties of all Tor entry guards.
+Small script to collect and analyse statistics about TCP stack properties of all Tor nodes.
 
 ## Data collection
 
  1. Install `docker`: [installation instructions](https://docs.docker.com/engine/installation/) (docker should be able to run without sudo)
 
- 1. Clone the repo: `git clone https://github.com/mjuarezm/entrystats.git`
+ 1. Clone the repo: `git clone https://github.com/mjuarezm/nodestats.git`
 
  1. Build docker image: `make build`
 
