@@ -68,7 +68,7 @@ def measure_node(node):
     address, fp, flags = node
     sleep(5 * random.random())
     samples = []
-    batch_id = '%s%s' % (strftime('%d%H%M%S'), i)
+    batch_id = '%s' % strftime('%d%H%M%S')
     for i in xrange(NUM_SAMPLES):
         sample = None
         try:
