@@ -11,7 +11,7 @@ from itertools import repeat
 NUM_PROCS = mp.cpu_count()
 NUM_BATCHES = 50
 NUM_SAMPLES = 5
-HEADERS = ['sample_id', 'fp', 'flags', 'latency']
+HEADERS = ['batch_id', 'sample_id', 'fp', 'flags', 'latency']
 TIMESTAMP = strftime('%y%m%d_%H%M%S')
 
 # directories
@@ -68,13 +68,13 @@ def measure_node(node):
     address, fp, flags = node
     sleep(5 * random.random())
     samples = []
+    batch_id = '%s%s' % (strftime('%d%H%M%S'), i)
     for i in xrange(NUM_SAMPLES):
         sample = None
         try:
             logging.info("Probing: {}".format(fp))
             packets = connect(address)
-            sample_id = '%s%s' % (strftime('%d%H%M%S'), i)
-            sample = [sample_id, fp, ' '.join(flags)] + get_stats(packets)
+            sample = [batch_id, i, fp, ' '.join(flags)] + get_stats(packets)
         except Exception as e:
             logging.exception("Node {0}: {1}".format(fp, e))
         samples.append(sample)
@@ -99,7 +99,7 @@ def main():
         for samples in p.imap(measure_node, it_nodes()):
             for sample in samples:
                 if sample is not None:
-                    f.write(','.join(sample) + '\n')
+                    f.write(','.join(map(str, sample)) + '\n')
             f.flush()
 
 
