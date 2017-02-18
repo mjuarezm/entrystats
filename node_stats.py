@@ -1,7 +1,8 @@
 import sys
 import logging
 from scapy.all import *
-from time import strftime, sleep
+from time import sleep
+from datetime import datetime
 import multiprocessing as mp
 from os.path import join, dirname, realpath
 from stem import control, process
@@ -12,7 +13,7 @@ NUM_PROCS = mp.cpu_count()
 NUM_BATCHES = 50
 NUM_SAMPLES = 5
 HEADERS = ['batch_id', 'sample_id', 'fp', 'flags', 'latency']
-TIMESTAMP = strftime('%y%m%d_%H%M%S')
+TIMESTAMP = datetime.now().strftime('%d%H%M%S')
 
 # directories
 BASE_DIR = dirname(realpath(__file__))
@@ -68,7 +69,8 @@ def measure_node(node):
     address, fp, flags = node
     sleep(5 * random.random())
     samples = []
-    batch_id = '%s' % strftime('%d%H%M%S')
+    ts, pid = datetime.now().strftime('%d%H%M%S%f'), id(mp.current_process())
+    batch_id = '%s%s' % (ts, pid)
     for i in xrange(NUM_SAMPLES):
         sample = None
         try:
