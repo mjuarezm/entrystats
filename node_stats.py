@@ -13,7 +13,7 @@ NUM_PROCS = mp.cpu_count()
 NUM_BATCHES = 50
 NUM_SAMPLES = 5
 HEADERS = ['batch_id', 'sample_id', 'fp', 'flags', 'latency']
-TIMESTAMP = datetime.now().strftime('%d%H%M%S')
+TIMESTAMP = datetime.now().strftime('%y%m%d_%H%M%S')
 
 # directories
 BASE_DIR = dirname(realpath(__file__))
