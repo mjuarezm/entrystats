@@ -85,7 +85,7 @@ def measure_node(node):
 
 
 def gen_it_nodes(nodes):
-    """Return iterator over nodes according to number of samples"""
+    """Return iterator over nodes according to the number of samples."""
     def it_nodes():
         for batch in repeat(nodes, NUM_BATCHES):
             for node in batch:
