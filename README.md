@@ -16,7 +16,8 @@ Small script to collect and analyse statistics about TCP stack properties of all
 
 1. Install Jupyter notebook: [installation instructions](http://jupyter.readthedocs.io/en/latest/install.html)
 
-1. You may need to install the following dependencies: `matplotlib`, `numpy`, `pandas, ggpy
+1. You may need to install the following pip dependencies: `matplotlib`, `numpy`, `pandas, `r-base`, `rpy2`
+1. You may need to install R and the following R packages: `ggplot2`, `gridExtra`
 
 1. Run analysis scripts: `make analyse`
 
