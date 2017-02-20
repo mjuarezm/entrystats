@@ -18,7 +18,7 @@ Small script to collect and analyse statistics about TCP stack properties of all
 
 1. You may need to install R and the following R packages: `ggplot2`, `gridExtra`
 
-1. You may need to install the following pip dependencies: `matplotlib`, `numpy`, `pandas, `rpy2`
+1. You may need to install the following pip dependencies: `matplotlib`, `numpy`, `pandas`, `rpy2`
 
 1. Run analysis scripts: `make analyse`
 
